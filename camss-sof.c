@@ -569,6 +569,11 @@ static void report_stream(const struct stream *st, unsigned int id)
 	secs = (double)(st->last_ts - st->first_ts) / 1e9;
 
 	printf("  events           : %lu\n", st->events);
+	printf("  timestamp (mono) : %llu.%09llu .. %llu.%09llu\n",
+	       (unsigned long long)(st->first_ts / NSEC_PER_SEC),
+	       (unsigned long long)(st->first_ts % NSEC_PER_SEC),
+	       (unsigned long long)(st->last_ts / NSEC_PER_SEC),
+	       (unsigned long long)(st->last_ts % NSEC_PER_SEC));
 	printf("  duration         : %.3f s\n", secs);
 	if (secs > 0.0)
 		printf("  frame rate       : %.3f fps\n",
@@ -604,7 +609,7 @@ static void usage(const char *argv0)
 	printf("  -e, --entity NAME   select sub-device by media entity name (substring)\n");
 	printf("  -d, --device PATH   select sub-device node directly (/dev/v4l-subdevN)\n");
 	printf("  -i, --id LIST       event ids to subscribe, e.g. 0, 0,2 or 0-3 (default 0)\n");
-	printf("  -n, --count N       stop after N events in total\n");
+	printf("  -n, --count N       stop after N events in total (one line per event)\n");
 	printf("  -t, --time SEC      stop after SEC seconds\n");
 	printf("  -l, --list          list sub-devices and their entity names, then exit\n");
 	printf("  -v, --verbose       print one line per event\n");
@@ -750,6 +755,13 @@ int main(int argc, char *argv[])
 	signal(SIGINT, handle_signal);
 	signal(SIGTERM, handle_signal);
 
+	/*
+	 * A bounded run is meant to be read back afterwards, so scroll the
+	 * events instead of overwriting a single live counter line.
+	 */
+	if (limit && !quiet)
+		verbose = true;
+
 	live = !quiet && !verbose && isatty(STDOUT_FILENO);
 
 	printf("watching %s", path);
@@ -800,9 +812,13 @@ int main(int argc, char *argv[])
 				total++;
 
 				if (verbose)
-					printf("id %u seq %u frame %u pend %u lat %.3f ms\n",
+					printf("id %u seq %u frame %u ts %llu.%09llu pend %u lat %.3f ms\n",
 					       ev.id, ev.sequence,
 					       ev.u.frame_sync.frame_sequence,
+					       (unsigned long long)(st->last_ts /
+								    NSEC_PER_SEC),
+					       (unsigned long long)(st->last_ts %
+								    NSEC_PER_SEC),
 					       ev.pending,
 					       st->latency.v[st->latency.n - 1]);
 			}

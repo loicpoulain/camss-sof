@@ -31,7 +31,7 @@ camss-sof [options]
   -e, --entity NAME   select sub-device by media entity name (substring)
   -d, --device PATH   select sub-device node directly (/dev/v4l-subdevN)
   -i, --id LIST       event ids to subscribe, e.g. 0, 0,2 or 0-3 (default 0)
-  -n, --count N       stop after N events in total
+  -n, --count N       stop after N events in total (one line per event)
   -t, --time SEC      stop after SEC seconds
   -l, --list          list sub-devices and their entity names, then exit
   -v, --verbose       print one line per event
